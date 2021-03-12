@@ -1,6 +1,6 @@
-name: Check Issues
+name: Check kissada1Issues
 
-on:
+on:master
   issues:
     types: [opened]
 jobs:
