@@ -10,16 +10,15 @@ plugins {
 buildscript {
     repositories {
         google()
-        jcenter()
-        maven { url = uri("https://kotlin.bintray.com/kotlinx") }
+        mavenCentral()
     }
 
-    val vNav = "2.3.3"
+    val vNav = "2.3.5"
     extra["vNav"] = vNav
 
     dependencies {
-        classpath("com.android.tools.build:gradle:4.1.2")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30")
+        classpath("com.android.tools.build:gradle:4.2.0")
+        classpath(kotlin("gradle-plugin", version = "1.5.0"))
         classpath("androidx.navigation:navigation-safe-args-gradle-plugin:${vNav}")
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -53,9 +52,8 @@ fun Task.applyOptimize() = doLast {
 subprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
         maven { url = uri("https://jitpack.io") }
-        maven { url = uri("http://oss.sonatype.org/content/repositories/snapshots") }
     }
 
     afterEvaluate {
@@ -63,12 +61,12 @@ subprojects {
             plugins.hasPlugin("com.android.application")) {
             android.apply {
                 compileSdkVersion(30)
-                buildToolsVersion = "30.0.2"
+                buildToolsVersion = "30.0.3"
                 ndkPath = "${System.getenv("ANDROID_SDK_ROOT")}/ndk/magisk"
 
                 defaultConfig {
                     if (minSdkVersion == null)
-                        minSdkVersion(17)
+                        minSdkVersion(21)
                     targetSdkVersion(30)
                 }
 

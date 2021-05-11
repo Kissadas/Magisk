@@ -146,8 +146,6 @@ shortcut:
     close(client);
 }
 
-static void magisk_logging();
-
 static int switch_cgroup(const char *cgroup, int pid) {
     char buf[32];
     snprintf(buf, sizeof(buf), "%s/cgroup.procs", cgroup);
@@ -163,7 +161,12 @@ static int switch_cgroup(const char *cgroup, int pid) {
     return 0;
 }
 
+static void magisk_logging();
+static void start_log_daemon();
+
 [[noreturn]] static void daemon_entry() {
+    magisk_logging();
+
     // Block all signals
     sigset_t block_set;
     sigfillset(&block_set);
@@ -171,8 +174,6 @@ static int switch_cgroup(const char *cgroup, int pid) {
 
     // Change process name
     set_nice_name("magiskd");
-
-    magisk_logging();
 
     int fd = xopen("/dev/null", O_WRONLY);
     xdup2(fd, STDOUT_FILENO);
@@ -186,6 +187,8 @@ static int switch_cgroup(const char *cgroup, int pid) {
 
     setsid();
     setcon("u:r:" SEPOL_PROC_DOMAIN ":s0");
+
+    start_log_daemon();
 
     LOGI(NAME_WITH_VER(Magisk) " daemon started\n");
 
@@ -261,7 +264,6 @@ int connect_daemon(bool create) {
             exit(1);
         }
 
-        LOGD("client: launching new main daemon process\n");
         if (fork_dont_care() == 0) {
             close(fd);
             daemon_entry();
@@ -310,7 +312,7 @@ static void logfile_writer(int sockfd) {
 
     char *log_buf;
     size_t buf_len;
-    sFILE log_fp = make_stream_fp<byte_stream>(log_buf, buf_len);
+    stream *log_strm = new byte_stream(log_buf, buf_len);
 
     msghdr msg{};
     iovec iov{};
@@ -342,12 +344,9 @@ static void logfile_writer(int sockfd) {
                 return;
             if (log_buf)
                 write(fd, log_buf, buf_len);
-            if (FILE *fp = fdopen(fd, "a")) {
-                setbuf(fp, nullptr);
-                log_fp = make_file(fp);
-            } else {
-                return;
-            }
+
+            delete log_strm;
+            log_strm = new fd_stream(fd);
             continue;
         }
 
@@ -382,12 +381,12 @@ static void logfile_writer(int sockfd) {
         iov.iov_len = meta.len;
         if (recvmsg(sockfd, &msg, 0) <= 0)
             return;
-        fwrite(buf, off + meta.len, 1, log_fp.get());
+        log_strm->write(buf, off + meta.len);
     }
 }
 
 static int magisk_log(int prio, const char *fmt, va_list ap) {
-    char buf[4096];
+    char buf[4000];
     int len = vsnprintf(buf, sizeof(buf), fmt, ap) + 1;
 
     if (log_sockfd >= 0) {
@@ -418,14 +417,16 @@ static int magisk_log(int prio, const char *fmt, va_list ap) {
     return len - 1;
 }
 
-#define mlog(prio) [](auto fmt, auto ap){ return magisk_log(ANDROID_LOG_##prio, fmt, ap); }
-static void magisk_logging() {
+static void start_log_daemon() {
     int fds[2];
     if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds) == 0) {
         log_sockfd = fds[0];
         new_daemon_thread([=] { logfile_writer(fds[1]); });
     }
+}
 
+#define mlog(prio) [](auto fmt, auto ap){ return magisk_log(ANDROID_LOG_##prio, fmt, ap); }
+static void magisk_logging() {
     log_cb.d = mlog(DEBUG);
     log_cb.i = mlog(INFO);
     log_cb.w = mlog(WARN);

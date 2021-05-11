@@ -2,7 +2,6 @@ package com.topjohnwu.magisk.ui
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -19,13 +18,13 @@ import com.topjohnwu.magisk.arch.BaseViewModel
 import com.topjohnwu.magisk.arch.ReselectionTarget
 import com.topjohnwu.magisk.core.*
 import com.topjohnwu.magisk.databinding.ActivityMainMd2Binding
+import com.topjohnwu.magisk.di.viewModel
 import com.topjohnwu.magisk.ktx.startAnimations
 import com.topjohnwu.magisk.ui.home.HomeFragmentDirections
 import com.topjohnwu.magisk.utils.HideableBehavior
 import com.topjohnwu.magisk.utils.Utils
 import com.topjohnwu.magisk.view.MagiskDialog
 import com.topjohnwu.magisk.view.Shortcuts
-import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.io.File
 
 class MainViewModel : BaseViewModel()
@@ -34,7 +33,7 @@ open class MainActivity : BaseUIActivity<MainViewModel, ActivityMainMd2Binding>(
 
     override val layoutRes = R.layout.activity_main_md2
     override val viewModel by viewModel<MainViewModel>()
-    override val navHost: Int = R.id.main_nav_host
+    override val navHostId: Int = R.id.main_nav_host
 
     private var isRootFragment = true
 
@@ -123,10 +122,7 @@ open class MainActivity : BaseUIActivity<MainViewModel, ActivityMainMd2Binding>(
         val topView = binding.mainToolbarWrapper
         val bottomView = binding.mainBottomBar
 
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT &&
-            !binding.mainBottomBar.isAttachedToWindow
-        ) {
+        if (!binding.mainBottomBar.isAttachedToWindow) {
             binding.mainBottomBar.viewTreeObserver.addOnWindowAttachListener(object :
                 ViewTreeObserver.OnWindowAttachListener {
 
@@ -166,9 +162,9 @@ open class MainActivity : BaseUIActivity<MainViewModel, ActivityMainMd2Binding>(
 
     private fun getScreen(name: String?): NavDirections? {
         return when (name) {
-            Const.Nav.SUPERUSER -> HomeFragmentDirections.actionSuperuserFragment()
-            Const.Nav.HIDE -> HomeFragmentDirections.actionHideFragment()
-            Const.Nav.MODULES -> HomeFragmentDirections.actionModuleFragment()
+            Const.Nav.SUPERUSER -> MainDirections.actionSuperuserFragment()
+            Const.Nav.HIDE -> MainDirections.actionHideFragment()
+            Const.Nav.MODULES -> MainDirections.actionModuleFragment()
             Const.Nav.SETTINGS -> HomeFragmentDirections.actionHomeFragmentToSettingsFragment()
             else -> null
         }

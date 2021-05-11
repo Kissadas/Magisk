@@ -3,7 +3,7 @@ APP_CFLAGS := -Wall -Oz -fomit-frame-pointer -flto \
 -D__MVSTR=${MAGISK_VERSION} -D__MCODE=${MAGISK_VER_CODE}
 APP_LDFLAGS := -flto
 APP_CPPFLAGS := -std=c++17
-APP_STL := c++_static
+APP_STL := none
 APP_PLATFORM := android-16
 
 ifdef MAGISK_DEBUG
@@ -15,10 +15,7 @@ ifdef B_64BIT
 APP_ABI += arm64-v8a x86_64
 endif
 
-# Busybox require some additional settings
+# Busybox should use stock libc.a
 ifdef B_BB
-ifeq ($(OS),Windows_NT)
-APP_SHORT_COMMANDS := true
-endif
-APP_PLATFORM := android-21
+APP_PLATFORM := android-22
 endif
